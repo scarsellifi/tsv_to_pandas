@@ -3,12 +3,12 @@ import numpy as np
 
 def tsv_to_dataframe(file_tsv):
     '''
-    this function transform Eurostat tsv file in pandas dataframe
+    this function transforms Eurostat tsv file in pandas dataframe
     file_tsv: file name. It's work with tsv and compressed file "tsv.gz"
     '''
     
     def clean_cells(x):
-        '''This function transform Eurostat Missing Values ": " in numpy missing values.
+        '''This function transforms Eurostat Missing Values ": " in numpy missing values.
         Then clean Eurostat annotation "b, u, .."'''
         try:
             return float(x)
@@ -26,15 +26,15 @@ def tsv_to_dataframe(file_tsv):
     
     # Create a dataframe for values data
     data_clean = data
-    # Clean values data with clean_cells function
+    # Clean data values with clean_cells function
     data_clean = data_clean.applymap(lambda x: clean_cells(x))
-    # We drop the columns with variable name like "age,isced11,unit,sex,geo\time". It is the first columns. we have a 
-    # dataframe with only values data
+    # Drop column with variable name like "age,isced11,unit,sex,geo\time". It is the first column. we have a 
+    # dataframe with only data values 
     data_clean.drop(data_clean.columns[0], axis = 1, inplace = True)
-    # we tranform column with variable in multiple-columns  
+    # transform column with variable in multiple-columns  
     variabili = data[data.columns[0]].apply(lambda x: pd.Series(x.split(",")))
     variabili.columns = data.columns[0].split(",")
-    #restituiamo il dataframe pulito 
+    # return cleaned dataframe in pandas dataframe
     return pd.concat([variabili, data_clean], axis = 1)
 
 
