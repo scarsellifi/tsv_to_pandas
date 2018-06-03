@@ -44,10 +44,13 @@ def tsv_to_dataframe(file_tsv):
 
 
 
-def tsv_to_dataframe_long(file_tsv):
+def tsv_to_dataframe_long(file_tsv, structure = "normal"):
     '''
     this function transforms Eurostat tsv file in pandas dataframe
     file_tsv: file name. It's work with tsv and compressed file "tsv.gz"
+    structure: "normal", columns indicates time
+    structure: "inverse", columns indicates Nuts / geo
+    
     '''
     
     def clean_cells(x):
@@ -76,7 +79,15 @@ def tsv_to_dataframe_long(file_tsv):
                     return "var_" + "geo"
                 else:
                     return "var_" + x
-
+                
+    
+    def columns_type_inverse(columns):
+        new_columns =[]
+        sep = columns.get_loc("time\\geo")
+        new_columns.extend(list(columns[:sep].map(lambda x: "var_" + x)))
+        new_columns.append("var_time")
+        new_columns.extend(list(columns[sep + 1:]))
+        return new_columns
     
     # open the Eurostat TSV file 
 
@@ -93,18 +104,27 @@ def tsv_to_dataframe_long(file_tsv):
     variabili.columns = data.columns[0].split(",")
     # return cleaned dataframe in pandas dataframe
     result = pd.concat([variabili, data_clean], axis = 1)
-    colonne  = list(map(lambda x: columns_type(x), list(result.columns.values)))
-    result.columns = colonne
-    colonne_var = result.columns.map(lambda x: str(x)[0:3] == "var")
-    index = list(compress(result.columns, colonne_var))
-    result = result.melt(id_vars = index)
-    result["value_raw"] = result["value"]
-    result["eurostat_annotation"] = result["value_raw"].apply(lambda x: annotation(x))
-    result["value"] = result["value"].apply(clean_cells) 
     
+    if structure == "normal":
+        colonne  = list(map(lambda x: columns_type(x), list(result.columns.values)))
+        result.columns = colonne
+        colonne_var = result.columns.map(lambda x: str(x)[0:3] == "var")
+        index = list(compress(result.columns, colonne_var))
+        result = result.melt(id_vars = index)
+        result["value_raw"] = result["value"]
+        result["eurostat_annotation"] = result["value_raw"].apply(lambda x: annotation(x))
+        result["value"] = result["value"].apply(clean_cells) 
+    elif structure == "inverse":
+        result.columns = columns_type_inverse(result.columns)
+        colonne_var = result.columns.map(lambda x: str(x)[0:3] == "var")
+        index = list(compress(result.columns, colonne_var))
+        result = result.melt(id_vars = index, var_name = "geo")
+        result["value_raw"] = result["value"]
+        result["eurostat_annotation"] = result["value_raw"].apply(lambda x: annotation(x))
+        result["value"] = result["value"].apply(clean_cells) 
+        
     
     return result
-
 #example 
 #if __name__ == "__main__":
 import urllib.request
